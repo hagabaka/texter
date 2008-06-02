@@ -5,6 +5,10 @@
 # marked as translatable, with _( ). In case the string contains embedded code, it
 # is able to rewrite it with string modulo operator with your input
 #
+# USAGE
+#   texter.rb <input-file> [<output-file>]
+# output-file is by default <named input-file>.texter.rb
+#
 # AUTHOR
 # Yaohan Chen <yaohan.chen@gmail.com>
 #
