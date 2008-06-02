@@ -12,6 +12,9 @@
 # AUTHOR
 # Yaohan Chen <yaohan.chen@gmail.com>
 #
+# LICENSE
+# Ruby's
+#
 # CREDITS
 # - Daniel Brumbaugh Keeney provided much help with the treetop grammar and rest of
 #   the program
