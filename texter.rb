@@ -5,6 +5,13 @@
 # marked as translatable, with _( ). In case the string contains embedded code, it
 # is able to rewrite it with string modulo operator with your input
 #
+# AUTHOR
+# Yaohan Chen <yaohan.chen@gmail.com>
+#
+# CREDITS
+# - Daniel Brumbaugh Keeney provided much help with the treetop grammar and rest of
+#   the program
+#
 # BUGS
 # - The grammar treats ' and " inside regexp, here-doc, %( ) etc as string delimiters
 # - Only strings enclosed in ' and " are handled
@@ -12,8 +19,7 @@
 # TODO
 # - Default answers for yes/no prompts
 # - Preview
-#
-# TODO (but probably too difficult)
+# (following probably too difficult)
 # - Save and restore progress
 # - Recover from incorrect parsing
 # - Undo
