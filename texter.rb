@@ -1,3 +1,23 @@
+#!/usr/bin/ruby
+#
+# texter is a utility to help you modify ruby source programs in order to use gettext.
+# It searches for string literals, display each and ask you whether it should be
+# marked as translatable, with _( ). In case the string contains embedded code, it
+# is able to rewrite it with string modulo operator with your input
+#
+# BUGS
+# - The grammar treats ' and " inside regexp, here-doc, %( ) etc as string delimiters
+# - Only strings enclosed in ' and " are handled
+#
+# TODO
+# - Default answers for yes/no prompts
+# - Preview
+#
+# TODO (but probably too difficult)
+# - Save and restore progress
+# - Recover from incorrect parsing
+# - Undo
+
 require 'treetop'
 require 'highline'
 
@@ -87,8 +107,10 @@ end
 module StringNode
   LINE_BOUNDARY = /\n|\r\n|\r|\A|\Z/
   def process
+    # when a string is found, we print the surrounding text and highlight the string
     context_start = interval.first
     context_end = interval.last
+    # try to find two lines before the start of string, and after end of string
     2.times do
       try_start = INPUT.rindex(LINE_BOUNDARY, [context_start-1, 0].max)
       try_end = INPUT.index(LINE_BOUNDARY, [context_end+1, INPUT.length-1].min)
@@ -160,14 +182,20 @@ module InterpolatedCodeNode
 end
 
 
+HIGHLINE = HighLine.new
 
-inpath =  ARGV[0] 
+inpath =  ARGV[0] or
+begin
+  HIGHLINE.say 'Usage: texter.rb <inputfile> [<outputfile>]'
+  exit
+end
+
 outpath = ARGV[1] || "#{inpath}.texter.rb"
 
 parser = RubyCodeParser.new
 File.open(outpath, 'w') do |f|
   OUTPUT = f
-  HIGHLINE = HighLine.new
   INPUT = File.read(inpath)
   parser.parse(INPUT).process
 end
+
