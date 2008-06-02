@@ -1,32 +1,21 @@
 require 'treetop'
+require 'highline'
 
 Treetop.load_from_string <<'END_GRAMMAR'
 
 grammar RubyCode
   rule code
-    (ignored / string / braced_code)* {
-      def process(output_file)
-        elements.each {|e| e.process(output_file)}
-      end
-    }
+    (ignored / string / braced_code)* <CodeNode>
   end
 
+  # this rule is to guarantee that { } always occur in matched pairs in code
+  # it is necessary as } is used to terminate interpolated code in strings
   rule braced_code
-    '{' code '}' {
-      def process(output_file)
-        output_file.write('{')
-        code.process(output_file)
-        output_file.write('}')
-      end
-    }
+    '{' code '}' <BracedCodeNode>
   end
 
   rule ignored
-    (comment / !quote ![{}] .) {
-      def process(output_file)
-        output_file.write(text_value)
-      end
-    }
+    (comment / !quote ![{}] .) <IgnoredNode>
   end
 
   rule comment
@@ -34,42 +23,26 @@ grammar RubyCode
   end
 
   rule string
-    ( double_quote body:(interpolated_code / double_string_body)* double_quote /
-      single_quote body:single_string_body* single_quote ) {
-      def process(output_file)
-        puts "STRING: #{text_value}"
-        output_file.puts "******#{text_value}*******"
-        body.elements.each do |e|
-          e.process(output_file)
-        end
-      end
-    }
+    (double_string / single_string) <StringNode>
+
+  end
+
+  rule double_string
+    double_quote body:(interpolated_code / double_string_body)* double_quote
+    <DoubleStringNode>
+  end
+
+  rule single_string
+    single_quote (!single_quote .)* single_quote <SingleStringNode>
   end
 
   rule double_string_body
-    !double_quote . {
-      def process(output_file)
-        # output_file.write text_value
-      end
-    }
+    !double_quote . <DoubleStringBodyNode>
   end
-
-  rule single_string_body
-    !single_quote . {
-      def process(output_file)
-        # output_file.write text_value
-      end
-    }
-  end
-
 
   rule interpolated_code
     ( '#{' body:code '}' /
-      '#' body:([$@] [a-zA-Z0-9_]+) ) {
-      def process(output_file) 
-        puts "CODE: #{body.text_value}"
-      end
-    }
+      '#' body:([$@] [a-zA-Z0-9_]+) ) <InterpolatedCodeNode>
   end
 
   rule quote
@@ -91,10 +64,110 @@ end
 
 END_GRAMMAR
 
-infile =  ARGV[0] 
-outfile = ARGV[1] || "#{infile}.texter.rb"
+class CodeNode < Treetop::Runtime::SyntaxNode
+  def process
+    elements.each {|e| e.process}
+  end
+end
+
+class BracedCodeNode < Treetop::Runtime::SyntaxNode
+  def process
+    OUTPUT.write('{')
+    code.process
+    OUTPUT.write('}')
+  end
+end
+
+module IgnoredNode
+  def process
+    OUTPUT.write(text_value)
+  end
+end
+
+module StringNode
+  LINE_BOUNDARY = /\n|\r\n|\r|\A|\Z/
+  def process
+    context_start = interval.first
+    context_end = interval.last
+    2.times do
+      try_start = INPUT.rindex(LINE_BOUNDARY, [context_start-1, 0].max)
+      try_end = INPUT.index(LINE_BOUNDARY, [context_end+1, INPUT.length-1].min)
+      context_start, context_end = try_start || context_start, try_end || context_end
+    end
+
+    HIGHLINE.say "String literal found at #{interval.inspect}:\n#{
+      INPUT[context_start...interval.first] +
+      HIGHLINE.color(text_value, :bold) +
+      INPUT[interval.last..context_end]
+    }"
+
+    if HIGHLINE.agree('Mark this string translatable? ') {|q| q.default = 'n'}
+      mark_translatable
+    else
+      OUTPUT.write text_value
+    end
+  end
+end
+
+class DoubleStringNode < Treetop::Runtime::SyntaxNode
+  LABEL_FORMAT = /[A-Za-z_]+/
+    def mark_translatable
+      string = ''
+      labels = {}
+      body.elements.each do |e|
+        if e.code?
+          body = e.body.text_value
+          label = HIGHLINE.ask("Specify label for embedded code #{
+            HIGHLINE.color(body, :bold)}: ") {|q|
+            q.validate = proc {|l| !labels.include?(l) && l =~ LABEL_FORMAT}
+            default = body[LABEL_FORMAT]
+            default += '_' while default.empty? || labels.include?(default)
+            q.default = default
+          }
+          labels[label] = body
+          string += "%{#{label}}"
+        else
+          string += e.text_value
+        end
+      end
+
+      result = %Q[_("#{string}")]
+      unless labels.empty?
+        result += " % {#{ labels.map {|(k, v)| ":#{k} => #{v}"}.join(', ') }}"
+        result = "(#{result})" if
+        HIGHLINE.agree "Does #{result} need to be parenthesized? "
+      end
+      OUTPUT.write result
+    end
+end
+
+class SingleStringNode < Treetop::Runtime::SyntaxNode
+  def mark_translatable
+    OUTPUT.write "_(#{text_value})"
+  end
+end
+
+class DoubleStringBodyNode < Treetop::Runtime::SyntaxNode
+  def code?
+    false
+  end
+end
+
+module InterpolatedCodeNode
+  def code?
+    true
+  end
+end
+
+
+
+inpath =  ARGV[0] 
+outpath = ARGV[1] || "#{inpath}.texter.rb"
 
 parser = RubyCodeParser.new
-File.open(outfile, 'w') do |f|
-  parser.parse(File.read(infile)).process(f)
+File.open(outpath, 'w') do |f|
+  OUTPUT = f
+  HIGHLINE = HighLine.new
+  INPUT = File.read(inpath)
+  parser.parse(INPUT).process
 end
