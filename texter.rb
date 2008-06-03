@@ -146,34 +146,35 @@ end
 
 class DoubleStringNode < Treetop::Runtime::SyntaxNode
   LABEL_FORMAT = /[A-Za-z_]+/
-    def mark_translatable
-      string = ''
-      labels = {}
-      body.elements.each do |e|
-        if e.code?
-          body = e.body.text_value
-          label = HIGHLINE.ask("Specify label for embedded code #{
-            HIGHLINE.color(body, :bold)}: ") {|q|
-            q.validate = proc {|l| !labels.include?(l) && l =~ LABEL_FORMAT}
-            default = body[LABEL_FORMAT]
-            default += '_' while default.empty? || labels.include?(default)
-            q.default = default
-          }
-          labels[label] = body
-          string += "%{#{label}}"
-        else
-          string += e.text_value
+  def mark_translatable
+    string = ''
+    labels = {}
+    body.elements.each do |e|
+      if e.code?
+        body = e.body.text_value
+        label = HIGHLINE.ask("Specify label for embedded code #{
+          HIGHLINE.color(body, :bold)
+        }: ") do |q|
+          q.validate = proc {|l| !labels.include?(l) && l =~ LABEL_FORMAT}
+          default = body[LABEL_FORMAT]
+          default += '_' while default.empty? || labels.include?(default)
+          q.default = default
         end
+        labels[label] = body
+        string += "%{#{label}}"
+      else
+        string += e.text_value
       end
-
-      result = %Q[_("#{string}")]
-      unless labels.empty?
-        result += " % {#{ labels.map {|(k, v)| ":#{k} => #{v}"}.join(', ') }}"
-        result = "(#{result})" if
-        HIGHLINE.agree "Does #{result} need to be parenthesized? "
-      end
-      OUTPUT.write result
     end
+
+    result = %Q[_("#{string}")]
+    unless labels.empty?
+      result += " % {#{ labels.map {|(k, v)| ":#{k} => #{v}"}.join(', ') }}"
+      result = "(#{result})" if HIGHLINE.agree "Parenthesize the expression #{
+        HIGHLINE.color(result, :bold)?}"
+    end
+    OUTPUT.write result
+  end
 end
 
 class SingleStringNode < Treetop::Runtime::SyntaxNode
