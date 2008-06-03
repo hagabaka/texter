@@ -170,8 +170,8 @@ class DoubleStringNode < Treetop::Runtime::SyntaxNode
     result = %Q[_("#{string}")]
     unless labels.empty?
       result += " % {#{ labels.map {|(k, v)| ":#{k} => #{v}"}.join(', ') }}"
-      result = "(#{result})" if HIGHLINE.agree "Parenthesize the expression #{
-        HIGHLINE.color(result, :bold)?}"
+      result = "(#{result})" if HIGHLINE.agree("Parenthesize the expression #{
+        HIGHLINE.color(result, :bold)}? ") {|q| q.default = 'y'}
     end
     OUTPUT.write result
   end
