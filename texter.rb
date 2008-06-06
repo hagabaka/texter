@@ -34,7 +34,7 @@
 require 'treetop'
 require 'highline'
 
-Treetop.load_from_string <<'END_GRAMMAR'
+Treetop.load_from_string <<'END_GRAMMAR_1'
 
 grammar RubyCode
   rule code
@@ -48,7 +48,7 @@ grammar RubyCode
   end
 
   rule ignored
-    (comment / !quote ![{}] .) <IgnoredNode>
+    (comment / string_like / !quote ![{}] .) <IgnoredNode>
   end
 
   rule comment
@@ -57,7 +57,6 @@ grammar RubyCode
 
   rule string
     (double_string / single_string) <StringNode>
-
   end
 
   rule double_string
@@ -95,7 +94,28 @@ grammar RubyCode
   end
 end
 
-END_GRAMMAR
+END_GRAMMAR_1
+
+def delimited_by(d)
+  "(!#{d} . / '\\\\' #{d})* #{d}"
+end
+
+Treetop.load_from_string <<"END_GRAMMAR_2"
+
+grammar RubyCode
+  # a few types of literals which can contain quotes
+  # this rule is written separatedly here so it can use ruby's interpolation without
+  # interfering the rest
+  rule string_like
+    '/' #{delimited_by "'/'"} /
+    '%' [qQrw]? ( '[' #{delimited_by "']'"} /
+                 '(' #{delimited_by "')'"} /
+                 '{' #{delimited_by "'}'"} )
+  end
+end
+
+END_GRAMMAR_2
+
 
 class CodeNode < Treetop::Runtime::SyntaxNode
   def process
