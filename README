@@ -5,7 +5,7 @@ is able to rewrite it with string modulo operator with your input
 
 USAGE
   texter.rb <input-file> [<output-file>]
-output-file is by default <named input-file>.texter.rb
+output-file is by default named <input-file>.texter.rb
 
 AUTHOR
 Yaohan Chen <yaohan.chen@gmail.com>
@@ -23,9 +23,10 @@ BUGS
   - regexp /.../
   - %[qQwr], followed by (), [], {} pairs
 - Only strings enclosed in ' and " are prompted
+- Default answers for yes/no prompts are not working in highline 1.4.0, but patch is
+  pending for next release
 
 TODO
-- Default answers for yes/no prompts
 - Preview
 (following probably too difficult)
 - Save and restore progress
