@@ -32,11 +32,11 @@ grammar1 = <<'END_GRAMMAR_1'
   end
 
   rule single_string
-    single_quote (!single_quote .)* single_quote <SingleStringNode>
+    single_quote ('\\' single_quote / !single_quote .)* single_quote <SingleStringNode>
   end
 
   rule double_string_body
-    !double_quote . <DoubleStringBodyNode>
+    ('\\' double_quote / !double_quote .) <DoubleStringBodyNode>
   end
 
   rule interpolated_code
@@ -130,7 +130,7 @@ class SingleStringNode < Treetop::Runtime::SyntaxNode
   end
 end
 
-class DoubleStringBodyNode < Treetop::Runtime::SyntaxNode
+module DoubleStringBodyNode
   def code?
     false
   end

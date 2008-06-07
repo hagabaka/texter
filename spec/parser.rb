@@ -36,13 +36,14 @@ context 'RubyCodeParser' do
     }.to_set.should.equal %w['bbb' "ddd"].to_set
   end
 
-  specify 'The parser should handle escaped quotes correctly' do
-    code =<<-EOS
-      "foo\"bar\"" 'foo\'bar'
-    EOS
-    code.ruby_strings.map {|n|
-      n.text_value
-    }.to_set.should.equal %w["foo"bar", 'foo'bar'].to_set
+  specify 'The parser should handle escaped single quotes correctly' do
+    s = %q("foo\"bar\"")
+    s.ruby_strings.map {|n| n.text_value}.should.equal [s]
+  end
+
+  specify 'The parser should handle escaped double quotes correctly' do
+    s = %q('foo\'bar\'')
+    s.ruby_strings.map {|n| n.text_value}.should.equal [s]
   end
 
   specify 'The parser should ignore quotes in comments' do
