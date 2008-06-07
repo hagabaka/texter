@@ -62,7 +62,7 @@ grammar1 = <<'END_GRAMMAR_1'
 END_GRAMMAR_1
 
 def delimited_by(d)
-  "(!#{d} . / '\\\\' #{d})* #{d}"
+  "('\\\\' #{d} / !#{d} .)* #{d}"
 end
 
 grammar2 = <<"END_GRAMMAR_2"

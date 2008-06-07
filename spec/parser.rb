@@ -56,7 +56,14 @@ context 'RubyCodeParser' do
 
   specify 'The parser should ignore quotes in regexp and % literals' do
     code =<<-EOS
-      /'a"/ %r(a 'a') %Q{"foo"}
+      /'a"/ %r(a 'a') %Q{"foo"} %['bar']
+    EOS
+    code.ruby_strings.should.be.empty
+  end
+
+  specify 'The parser should handle escaped delimiter in regexp and % literals' do
+    code =<<-'EOS'
+      /\/'f'/ %r(\)"b") %Q{a \} 'a'} %['a\]b']
     EOS
     code.ruby_strings.should.be.empty
   end
