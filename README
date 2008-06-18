@@ -22,6 +22,7 @@ BUGS
   except in these common cases:
   - regexp /.../
   - %[qQwr], followed by (), [], {} pairs
+- Quotes in $' and $" are treated incorrectly as string delimiters
 - Only strings enclosed in ' and " are prompted
 - Default answers for yes/no prompts are not working in highline 1.4.0, but patch is
   pending for next release
